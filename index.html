@@ -736,7 +736,7 @@ textarea.addEventListener('keydown', (e) => {
 
 async function sendMessage() {
   const key = OPENROUTER_KEY;
-  const model = 'nousresearch/hermes-3-llama-3.1-405b:free';
+  const model = 'openai/gpt-oss-120b:free';
   const content = textarea.value.trim();
 
   if (!content) return;
