@@ -99,18 +99,6 @@
     50% { box-shadow: 0 0 20px var(--green-glow), inset 0 0 10px var(--green-glow2); }
   }
 
-  @keyframes typing-dots {
-    0% { content: '█'; }
-    33% { content: '█▓'; }
-    66% { content: '█▓░'; }
-    100% { content: '█'; }
-  }
-
-  @keyframes matrix-rain {
-    0% { transform: translateY(-100%); opacity: 1; }
-    100% { transform: translateY(100vh); opacity: 0; }
-  }
-
   /* Matrix rain canvas */
   #matrix-bg {
     position: fixed;
@@ -629,7 +617,8 @@ setInterval(() => {
 }, 1000);
 
 // ── EMBEDDED API KEY ──────────────────────────────────────────
-const OPENROUTER_KEY = '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'';
+// BUG 1 FIX: Removed stray trailing quote that caused a syntax error
+const OPENROUTER_KEY = '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';
 // ──────────────────────────────────────────────────────────────
 
 // State
@@ -735,18 +724,20 @@ textarea.addEventListener('keydown', (e) => {
 });
 
 
-  
 async function sendMessage() {
-  const key = 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;
+  // BUG 2 FIX: Use the OPENROUTER_KEY constant instead of the bare literal variable name
+  const key = OPENROUTER_KEY;
   const model = 'openai/gpt-oss-120b:free';
   const content = textarea.value.trim();
 
   if (!content) return;
-  if (!key || key === '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') {
+
+  // BUG 3 FIX: Check if key is the placeholder, not if it equals the real key
+  if (!key || key === 'YOUR_OPENROUTER_KEY_HERE') {
     sysMsg('<span style="color:var(--red)">ERROR: REPLACE \'YOUR_OPENROUTER_KEY_HERE\' WITH YOUR KEY IN THE SOURCE.</span>');
     return;
   }
-  
+
   // Add user message
   textarea.value = '';
   textarea.style.height = 'auto';
@@ -812,6 +803,8 @@ async function sendMessage() {
         if (!line.startsWith('data: ')) continue;
         const data = line.slice(6).trim();
         if (data === '[DONE]') continue;
+        // BUG 4 FIX: Moved catch inside the for-loop try block so JSON parse
+        // errors are caught per-line without breaking the entire stream loop
         try {
           const json = JSON.parse(data);
           const delta = json.choices?.[0]?.delta?.content || '';
@@ -820,7 +813,8 @@ async function sendMessage() {
             streamBody.innerHTML = formatContent(fullResponse);
             scrollBottom();
           }
-          catch {}
+        } catch {
+          // Ignore malformed SSE lines (partial chunks, keep-alives, etc.)
         }
       }
     }
@@ -829,8 +823,7 @@ async function sendMessage() {
     messages.push({ role: 'assistant', content: fullResponse });
     updateTokens(fullResponse);
 
-  } 
-  catch (err) {
+  } catch (err) {
     typingEl.remove();
     const errEl = document.createElement('div');
     errEl.className = 'error-msg';
